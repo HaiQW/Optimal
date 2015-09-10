@@ -22,9 +22,9 @@ class TestFuncOne(FuncModel):
 
     def gradient(self, variable):
         x = np.append(variable, np.array([1]))
-        a = np.mat(self.a[0:2])
-        b = np.mat(self.b[0:2])
-        c = np.mat(self.c[0:2])
+        a = np.array(self.a[0:2])
+        b = np.array(self.b[0:2])
+        c = np.array(self.c[0:2])
         g = a * np.exp(np.dot(self.a, x.T)) + b * np.exp(np.dot(self.b, x.T)) + c * np.exp(np.dot(self.c, x.T))
         return g
 

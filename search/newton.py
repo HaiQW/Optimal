@@ -1,5 +1,7 @@
 """
 Newton search algorithm.
+
+A powerful method for unconstrained minimization problem.
 """
 import sys
 import numpy as np
