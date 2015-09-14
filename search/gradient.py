@@ -8,6 +8,7 @@ from copy import deepcopy
 
 from models.base import FuncModel
 from models.testfunctions import TestFuncOne
+from models.testfunctions import TestFuncTwo
 from utils.plotfunc import FuncGraph
 
 
@@ -15,7 +16,9 @@ class GradientDescentMethod(object):
     max_iter = 100
     stop_error = 1e-6
     dim = 2
-    iter_points_set = []
+    iter_points = []
+    iter_errors = []
+    iter_counts = 0
 
     def __init__(self, func_model, **kwargs):
         if not isinstance(func_model, FuncModel):
@@ -34,7 +37,7 @@ class GradientDescentMethod(object):
         g = -1 * self.model.gradient(variable)
         return g
 
-    def _backtracking_line_search(self, curr_point, search_dir, alpha=0.1, beta=0.7):
+    def _backtracking_line_search(self, curr_point, search_dir, alpha=0.1, beta=0.5):
         """
         A very simple and effective inexact line search methods called backtracking,
         which depends on two constants alpha, beta, with 0 < alpha < 0.5, 0 < beta < 1.
@@ -46,9 +49,9 @@ class GradientDescentMethod(object):
         a = alpha
         b = beta
         t = 1
-        print "x", x
-        print delta_x
-        print fx + a * t * np.dot(diff_fx, delta_x.T)
+        # print "x", x
+        # print delta_x
+        # print fx + a * t * np.dot(diff_fx, delta_x.T)
         while self.model.func_value(x + t * delta_x) > (fx + a * t * np.dot(diff_fx, delta_x.T)):
             t *= b
         return t
@@ -95,16 +98,23 @@ class GradientDescentMethod(object):
             return True
 
     def get_iter_points(self):
-        return self.iter_points_set
+        return self.iter_points
+
+    def get_iter_errors(self):
+        return self.iter_errors
+
+    def get_iter_counts(self):
+        return self.iter_counts
 
     def search(self, method):
         """
         Gradient descent method with backtracking line search.
         """
-        error = sys.float_info.max
-        count = 0
         x = self.init_point
-        self.iter_points_set.append(np.array(x))  # Save points of each iteration
+        error = self._calc_error(x)
+        count = 0
+        self.iter_points.append(np.array(x))  # Save points of each iteration
+        self.iter_errors.append(error)
         while error > self.stop_error and count < self.max_iter:
             search_direction = self._calc_search_direction(x)
             if method == 'backtracking':
@@ -114,15 +124,13 @@ class GradientDescentMethod(object):
             else:
                 raise TypeError("No such a searching method, got %r" % method)
             x += t * search_direction
-            # return
-            self.iter_points_set.append(deepcopy(x))
-            count += 1
-            print "x:", x
             error = self._calc_error(x)
-            print "error: ", error
-
-        print "total_count: ", count
+            self.iter_errors.append(error)
+            self.iter_points.append(deepcopy(x))
+            count += 1
+        self.iter_counts = count
         return x
+
 
 def main():
     a = np.array([1, 3, -0.1], dtype=np.float64)
@@ -146,5 +154,22 @@ def main():
     print iter_points
 
 
+def test_func_two():
+    """
+    Main function which is used to test class TestFuncTwo.
+    """
+    a = np.mat(np.ones(shape=(500, 100)))
+    b = np.mat(np.ones(shape=(500, 1)))
+    c = np.mat(np.ones(shape=(1, 100)))
+    test_func_R100 = TestFuncTwo(a=a, b=b, c=c)
+    x = np.mat(np.zeros(shape=(1, 100)))
+    test_gradient = GradientDescentMethod(test_func_R100, stop_error=1e-6, max_iter=200, init_point=x)
+    optimal = test_gradient.search('backtracking')
+    iter_points = np.array(test_gradient.get_iter_points())
+    iter_errors = np.array(test_gradient.get_iter_errors())
+    iter_counts = np.array(test_gradient.get_iter_counts())
+    print iter_errors
+
+
 if __name__ == '__main__':
-    main()
+    test_func_two()

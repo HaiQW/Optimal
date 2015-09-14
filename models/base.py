@@ -1,7 +1,7 @@
 """
-The interface modules.
+This module presents an abstract class (interface) of function model that any other specific function class must
+inherit it.
 """
-import numpy as np
 
 from abc import ABCMeta, abstractmethod
 
