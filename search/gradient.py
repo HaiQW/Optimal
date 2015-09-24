@@ -128,6 +128,9 @@ class GradientDescentMethod(object):
             self.iter_errors.append(error)
             self.iter_points.append(deepcopy(x))
             count += 1
+            print error
+            print x
+            print t
         self.iter_counts = count
         return x
 

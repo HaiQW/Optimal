@@ -40,8 +40,10 @@ class RareFunc(FuncModel):
         return derive_sum_const
 
     def gradient(self, variable):
-        if not all(variable > np.zeros(shape=(1, self.dim))):
-            raise ValueError("ValueError. dia(A) must greater than zero vector, got negative values.")
+        x = variable
+        if not (x > 0).all():
+            # raise ValueError("ValueError. dia(A) must greater than zero vector, got negative values.")
+            x = np.zeros(shape=(1, self.dim))
         major_size = self.major.shape[0]
         rare_size = self.rare.shape[0]
         g = np.zeros(shape=(1, self.dim))
@@ -52,10 +54,10 @@ class RareFunc(FuncModel):
                 # dissimilar constraints
                 d_ij = self.rare[j, :] - self.major[i, :]
                 dis = np.sqrt(np.dot(d_ij * d_ij, x.T))
-                g += 0.5 * d_ij * d_ij / dis
-                h -= 0.25 * np.dot((d_ij * d_ij).T, d_ij * d_ij) / np.math.pow(dis, 3)
+                g += 0.5 * d_ij * d_ij / (((dis == 0) * 1e-6) + dis)
+                h -= 0.25 * np.dot((d_ij * d_ij).T, d_ij * d_ij) / (np.math.pow(dis, 3) + (dis == 0) * 1e-6)
                 sum += dis
-        g = self.gradient_help - self.c * g / sum
+        g = self.gradient_help - self.c * g / (sum + (sum == 0) * 1e-6)
         self.distance_help = sum
         self.hessian_help = h
         return g
@@ -68,9 +70,20 @@ class RareFunc(FuncModel):
         return h
 
     def func_value(self, variable):
+        # f = np.dot(self.gradient_help, x.T) + self.c * np.math.log(self.distance_help)
         x = variable
-        f = np.dot(self.gradient_help, x.T) + self.c * np.math.log(self.distance_help)
+        if not (x > 0).all():
+            x = np.ones(shape=(1, self.dim)) * 1e-6
+        f = np.dot(self.gradient_help, x.T)
 
+        # calculate distance
+        sum_dis = 0
+        for i in range(0, self.major.shape[0]):
+            for j in range(0, self.rare.shape[0]):
+                vec_ij = self.major[i, :] - self.rare[j, :]
+                dis_ij = np.math.sqrt(np.dot(vec_ij * vec_ij, x.T))
+                sum_dis += dis_ij
+        f += self.c * np.math.log(sum_dis)
         return f
 
     def get_name(self):

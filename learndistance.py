@@ -114,8 +114,7 @@ def main():
     rare = RareFunc(name="rare", rare=rare_test, major=major_test, c=1, dim=2)
     test_gradient = GradientDescentMethod(rare, stop_error=1e-6, max_iter=200, init_point=init)
     print "gradient", rare.gradient(init)
-    test_gradient.search('backtracking')
-    # print RareFunc.sum_gradient
+    test_gradient.search('exact')
     rare.gradient(init)
     print "rare_gradient_a:\n", rare.hessian(init)
 
