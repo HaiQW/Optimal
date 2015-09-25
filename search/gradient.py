@@ -15,7 +15,7 @@ from utils.plotfunc import FuncGraph
 class GradientDescentMethod(object):
     max_iter = 100
     stop_error = 1e-6
-    dim = 2
+    dim = 3
     iter_points = []
     iter_errors = []
     iter_counts = 0
@@ -56,18 +56,28 @@ class GradientDescentMethod(object):
             t *= b
         return t
 
-    def _exact_line_search(self, curr_point, search_dir):
+    def _exact_line_search(self, variable, search_dir):
         """
         A line search method that chooses t to minimize f along the ray {x + t * delta_x | t >= 0} as follows.
         t = arg_min f(x + t * delta_x). This exact line search is used when the cost of minimization problem
         with one variable is low compared to the cost of computing the search direction itself.
         """
-        granularity = 1.0 / 100.0
-        t = np.array(np.linspace(0, 99, 100))
-        t = t * granularity
-        fs = [self.model.func_value(curr_point + s * search_dir) for s in t]
-        index = np.argmin(fs)
-        return index * granularity
+        x = variable
+        reduction = 2.0
+        lambda_ = 1.0
+        min_value = sys.float_info.max
+        curr_dir = None
+        f_value = self.model.func_value(x)
+        f_pre_value = f_value * 1.1
+        while f_value < f_pre_value:
+            lambda_ /= reduction
+            f_pre_value = f_value
+            curr_dir = x - lambda_ * search_dir
+            if not (curr_dir > 0).all():
+                curr_dir = np.zeros(shape=(1, self.dim))
+            f_value = self.model.func_value(curr_dir)
+
+        return curr_dir
 
     def _calc_error(self, point):
         x = point
@@ -118,19 +128,19 @@ class GradientDescentMethod(object):
         while error > self.stop_error and count < self.max_iter:
             search_direction = self._calc_search_direction(x)
             if method == 'backtracking':
-                t = self._backtracking_line_search(x, search_direction)
+                raise NotImplementedError("This branch has not been implemented yet.")
+                # t = self._backtracking_line_search(x, search_direction)
             elif method == 'exact':
-                t = self._exact_line_search(x, search_direction)
+                x = self._exact_line_search(x, search_direction)
             else:
                 raise TypeError("No such a searching method, got %r" % method)
-            x += t * search_direction
+            # x += t * search_direction
             error = self._calc_error(x)
             self.iter_errors.append(error)
             self.iter_points.append(deepcopy(x))
             count += 1
-            print error
             print x
-            print t
+            # print t
         self.iter_counts = count
         return x
 

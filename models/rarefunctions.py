@@ -52,7 +52,7 @@ class RareFunc(FuncModel):
         for i in range(0, rare_size):
             for j in range(0, major_size):
                 # dissimilar constraints
-                d_ij = self.rare[j, :] - self.major[i, :]
+                d_ij = self.rare[i, :] - self.major[j, :]
                 dis = np.sqrt(np.dot(d_ij * d_ij, x.T))
                 g += 0.5 * d_ij * d_ij / (((dis == 0) * 1e-6) + dis)
                 h -= 0.25 * np.dot((d_ij * d_ij).T, d_ij * d_ij) / (np.math.pow(dis, 3) + (dis == 0) * 1e-6)
@@ -65,7 +65,8 @@ class RareFunc(FuncModel):
     def hessian(self, variable):
         # Calculate the gradient of the gradient
 
-        h = self.hessian_help / self.distance_help - np.dot(self.gradient_help.T, self.gradient_help)/np.math.pow(self.distance_help, 2)
+        h = self.hessian_help / self.distance_help -\
+            np.dot(self.gradient_help.T, self.gradient_help)/np.math.pow(self.distance_help, 2)
         h = - self.c * h
         return h
 
