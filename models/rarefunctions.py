@@ -19,46 +19,50 @@ class RareFunc(FuncModel):
             self.rare = rare
             self.major = major
             self.dim = dim
-            self.gradient_help = self._init()
             self.c = c
+            self.major_size = major.shape[0]
+            self.rare_size = rare.shape[0]
+            self.gradient_help = self._init()
         else:
             raise TypeError("All the input parameter must be array or mat.")
         self.name_ = name
 
+
     def _init(self):
-        major_size = self.major.shape[0]
-        rare_size = self.rare.shape[0]
         derive_sum_const = np.zeros(shape=(1, self.dim))
-        for i in range(0, major_size + rare_size):
+        for i in range(0, self.major_size):
             for j in range(0, i):
-                if i < rare_size:
-                    d = np.array(self.rare[i, :] - self.rare[j, :])
-                    derive_sum_const += d * d
-                if i >= rare_size and j >= rare_size:
-                    d = self.major[i - rare_size, :] - self.major[j - rare_size, :]
-                    derive_sum_const += d * d
+                d = np.array(self.major[i, :] - self.major[j, :])
+                derive_sum_const += d * d
+
+        # similar pairwise constraints in major category
+        for i in range(0, self.rare_size):
+            for j in range(0, i):
+                d = np.array(self.rare[i, :] - self.rare[j, :])
+                derive_sum_const += d * d
+
         return derive_sum_const
 
+
     def gradient(self, variable):
-        x = variable
+        x = np.array(variable)
         if not (x > 0).all():
             # raise ValueError("ValueError. dia(A) must greater than zero vector, got negative values.")
             x = np.zeros(shape=(1, self.dim))
-        major_size = self.major.shape[0]
-        rare_size = self.rare.shape[0]
         g = np.zeros(shape=(1, self.dim))
         h = np.zeros(shape=(self.dim, self.dim))
-        sum = 0.0
-        for i in range(0, rare_size):
-            for j in range(0, major_size):
-                # dissimilar constraints
+        sum_ = 0.0
+
+        # gradient in dissimilar pairwise constraints
+        for i in range(0, self.rare_size):
+            for j in range(0, self.major_size):
                 d_ij = self.rare[i, :] - self.major[j, :]
                 dis = np.sqrt(np.dot(d_ij * d_ij, x.T))
                 g += 0.5 * d_ij * d_ij / (((dis == 0) * 1e-6) + dis)
                 h -= 0.25 * np.dot((d_ij * d_ij).T, d_ij * d_ij) / (np.math.pow(dis, 3) + (dis == 0) * 1e-6)
-                sum += dis
-        g = self.gradient_help - self.c * g / (sum + (sum == 0) * 1e-6)
-        self.distance_help = sum
+                sum_ += dis
+        g = self.gradient_help - (self.c * g / (sum_ + (sum_ == 0) * 1e-6))
+        self.distance_help = sum_
         self.hessian_help = h
         return g
 
@@ -72,7 +76,7 @@ class RareFunc(FuncModel):
 
     def func_value(self, variable):
         # f = np.dot(self.gradient_help, x.T) + self.c * np.math.log(self.distance_help)
-        x = variable
+        x = np.array(variable)
         if not (x > 0).all():
             x = np.ones(shape=(1, self.dim)) * 1e-6
         f = np.dot(self.gradient_help, x.T)
@@ -89,4 +93,3 @@ class RareFunc(FuncModel):
 
     def get_name(self):
         return self.name_
-

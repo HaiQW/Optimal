@@ -3,7 +3,6 @@ Gradient descent method, or gradient method with backtracking line search,
 with a = 0.1, b = 0.1
 """
 import numpy as np
-import sys
 from copy import deepcopy
 
 from models.base import FuncModel
@@ -62,21 +61,25 @@ class GradientDescentMethod(object):
         t = arg_min f(x + t * delta_x). This exact line search is used when the cost of minimization problem
         with one variable is low compared to the cost of computing the search direction itself.
         """
-        x = variable
+        x = np.array(variable)
         reduction = 2.0
         lambda_ = 1.0
-        min_value = sys.float_info.max
-        curr_dir = None
-        f_value = self.model.func_value(x)
-        f_pre_value = f_value * 1.1
+        curr_dir = x
+        f_value = self.model.func_value(x + lambda_ * search_dir)
+        # f_pre_value = f_value * 1.1
+        f_pre_value = self.model.func_value(x)
         while f_value < f_pre_value:
             lambda_ /= reduction
             f_pre_value = f_value
-            curr_dir = x - lambda_ * search_dir
+            curr_dir = x + lambda_ * search_dir
             if not (curr_dir > 0).all():
-                curr_dir = np.zeros(shape=(1, self.dim))
+                curr_dir[curr_dir < 0] = 0
+                # curr_dir = np.zeros(shape=(1, self.dim))
             f_value = self.model.func_value(curr_dir)
 
+        print "obj:%s" % f_value
+        print "direction:%s" % curr_dir
+        print "lambda_:%s" % lambda_
         return curr_dir
 
     def _calc_error(self, point):
@@ -139,7 +142,7 @@ class GradientDescentMethod(object):
             self.iter_errors.append(error)
             self.iter_points.append(deepcopy(x))
             count += 1
-            print x
+            print "Step:%s, dig(A):%s" % (count, x[0, :])
             # print t
         self.iter_counts = count
         return x
